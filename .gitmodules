@@ -1,0 +1,3 @@
+[submodule "keras-rl"]
+	path = keras-rl
+	url = git@github.com:yuriiz/keras-rl.git
