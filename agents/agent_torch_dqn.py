@@ -31,16 +31,23 @@ class DQN(nn.Module):
 
     def __init__(self, n_observations, n_actions):
         super(DQN, self).__init__()
-        self.layer1 = nn.Linear(n_observations, 128)
-        self.layer2 = nn.Linear(128, 128)
-        self.layer3 = nn.Linear(128, n_actions)
+        self.model = nn.Sequential(
+                        nn.Linear(n_observations, 512),
+                        nn.ReLU(),
+                        nn.Dropout(0.2),
+                        nn.Linear(512, 512),
+                        nn.ReLU(),
+                        nn.Dropout(0.2),
+                        nn.Linear(512, 512),
+                        nn.ReLU(),
+                        nn.Dropout(0.2),
+                        nn.Linear(512, n_actions),
+                    )
 
     # Called with either one element to determine next action, or a batch
     # during optimization. Returns tensor([[left0exp,right0exp]...]).
     def forward(self, x):
-        x = F.relu(self.layer1(x))
-        x = F.relu(self.layer2(x))
-        return self.layer3(x)
+        return self.model(x)
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -70,10 +77,10 @@ class Player:
         n_actions = env.action_space.n
         # Get the number of state observations
         state, info = self.env.reset()
-        n_observations = len(state)
+        self.n_observations = env.observation_space[0]
 
-        self.policy_net = DQN(n_observations, n_actions).to(self.device)
-        self.target_net = DQN(n_observations, n_actions).to(self.device)
+        self.policy_net = DQN(self.n_observations, n_actions).to(self.device)
+        self.target_net = DQN(self.n_observations, n_actions).to(self.device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=lr, amsgrad=True)
@@ -82,6 +89,28 @@ class Player:
 
         self.steps_done = 0
 
+    def process_action(self, action, info):
+        """Find nearest legal action"""
+        if 'legal_moves' in info.keys():
+            legal_moves_limit = info['legal_moves']
+        else:
+            legal_moves_limit = None
+    
+        if legal_moves_limit is not None:
+            legal_moves_limit = [move.value for move in legal_moves_limit]
+            if action not in legal_moves_limit:
+                curr_action = action
+                for i in range(7):
+                    curr_action = action+i
+                    if curr_action in legal_moves_limit:
+                        action = curr_action
+                        break
+                    curr_action = action-i
+                    if curr_action in legal_moves_limit:
+                        action = curr_action
+                        break
+                
+        return action
 
     def action(self, action_space, observation, info):  # pylint: disable=no-self-use
         """Mandatory method that calculates the move based on the observation array and the action space."""
@@ -101,9 +130,11 @@ class Player:
                 # t.max(1) will return the largest column value of each row.
                 # second column on max result is index of where max element was
                 # found, so we pick action with the larger expected reward.
-                return self.policy_net(observation).max(1).indices.view(1, 1)
+                action = self.policy_net(observation).max(1).indices.view(1, 1)
         else:
-            return torch.tensor([[action_space.sample()]], device=self.device, dtype=torch.long)
+            action = torch.tensor([[action_space.sample()]], device=self.device, dtype=torch.long)
+
+        return self.process_action(action, info)
 
     def optimize_model(self):
         # BATCH_SIZE is the number of transitions sampled from the replay buffer
@@ -156,26 +187,21 @@ class Player:
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
 
-    def train(self):
+    def train(self, num_episodes=50):
         # TAU is the update rate of the target network
         TAU = 0.005
-
-        if torch.cuda.is_available() or torch.backends.mps.is_available():
-            num_episodes = 600
-        else:
-            num_episodes = 50
 
         for i_episode in range(num_episodes):
             # Initialize the environment and get its state
             state, info = self.env.reset()
-            state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+            #state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
+            state = torch.zeros(1, self.n_observations)
             for t in count():
                 action = self.action(self.env.action_space, state, info)
-                observation, reward, terminated, truncated = self.env.step(action.item())
+                observation, reward, done, info = self.env.step(action.item())
                 reward = torch.tensor([reward], device=self.device)
-                done = terminated or truncated
 
-                if terminated:
+                if done:
                     next_state = None
                 else:
                     next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)

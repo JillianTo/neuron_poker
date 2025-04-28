@@ -758,7 +758,8 @@ class PlayerShell:
         self.num_raises_in_street = {Stage.PREFLOP: 0,
                                      Stage.FLOP: 0,
                                      Stage.TURN: 0,
-                                     Stage.RIVER: 0}
+                                     Stage.RIVER: 0,
+                                     Stage.SHOWDOWN: 0} # TODO: is showdown right
 
     def __repr__(self):
         return f"Player {self.name} at seat {self.seat} with stack of {self.stack} and cards {self.cards}"
