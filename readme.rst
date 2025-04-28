@@ -10,17 +10,16 @@ Usage:
 
 Run:
 
-- Install Python 3.11, I would also recommend to install PyCharm.
-- Install Poetry with ``curl -sSL https://install.python-poetry.org | python3 -``
-- Create a virtual environment with ``poetry env use python3.11``
-- Activate it with ``poetry shell``
-- Install all required packages with ``poetry install --no-root``
+- Install Python 3.8
+- Create a virtual environment with ``python3.11 -m venv venv``
+- Activate it with ``source venv/bin/activate``
+- Install the first set of required packages with ``pip install -r 0_requirements.txt``
+- Install the second set of required packages with ``pip install -r 1_requirements.txt``
 - Run 6 random players playing against each other:
-  ``poetry run python main.py selfplay random --render`` or
-- To manually control the players:``poetry run python main.py selfplay keypress --render``
-- Example of genetic algorithm with self improvement: ``poetry run python main.py selfplay equity_improvement --improvement_rounds=20 --episodes=10``
-- In order to use the C++ version of the equity calculator, you will also need to install Visual Studio 2019 (or GCC over Cygwin may work as well). To use it, use the -c option when running main.py.
-- For more advanced users: ``poetry run python main.py selfplay dqn_train -c`` will start training the deep Q agent with C++ Monte Carlo for faster calculation
+  ``python3.11 main.py selfplay random --render`` or
+- To manually control the players:``python3.11 main.py selfplay keypress --render``
+- Example of genetic algorithm with self improvement: ``python3.11 main.py selfplay equity_improvement --improvement_rounds=20 --episodes=10``
+- For more advanced users: ``python3.11 main.py selfplay dqn_train_torch`` will start training the deep Q agent with PyTorch
 
 .. figure:: doc/table.gif
    :alt:
@@ -53,6 +52,7 @@ Please add your model based agents here.
 -  ``agent_consider_equity.py``: an agent considering equity information
 -  ``agent_keras_rl_dqn.py``: Deep Q learning agent, using keras-rl for deep reinforcement learning
 -  ``agent_custom_q1.py``: Custom implementation of deep q learning
+-  ``agent_torch_dqn.py``: Deep Q learning agent, using PyTorch for deep reinforcement learning
 
 Note that the observation property is a dictionary that contains all the information about the players and table that can be used to make a decision.
 
