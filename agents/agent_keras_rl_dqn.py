@@ -7,7 +7,6 @@ import numpy as np
 
 from gym_env.enums import Action
 
-import tensorflow as tf
 import json
 
 from tensorflow.keras.models import Sequential, model_from_json
@@ -55,7 +54,6 @@ class Player:
 
     def initiate_agent(self, env):
         """initiate a deep Q agent"""
-        tf.compat.v1.disable_eager_execution()
 
         self.env = env
 
@@ -81,7 +79,7 @@ class Player:
                             target_model_update=1e-2, policy=policy,
                             processor=CustomProcessor(),
                             batch_size=batch_size, train_interval=train_interval, enable_double_dqn=enable_double_dqn)
-        self.dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+        self.dqn.compile(Adam(learning_rate=1e-3), metrics=['mae'])
 
     def start_step_policy(self, observation):
         """Custom policy for random decisions for warm up."""
@@ -97,8 +95,8 @@ class Player:
         tensorboard = TensorBoard(log_dir='./Graph/{}'.format(timestr), histogram_freq=0, write_graph=True,
                                   write_images=False)
 
-        self.dqn.fit(self.env, nb_max_start_steps=nb_max_start_steps, nb_steps=nb_steps, visualize=False, verbose=2,
-                     start_step_policy=self.start_step_policy, callbacks=[tensorboard])
+        self.dqn.fit(self.env, nb_max_start_steps=nb_max_start_steps, nb_steps=nb_steps, verbose=2,
+                     start_step_policy=self.start_step_policy)
 
         # Save the architecture
         dqn_json = self.model.to_json()

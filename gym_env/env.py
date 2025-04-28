@@ -166,7 +166,7 @@ class HoldemTable(Env):
         if self._agent_is_autoplay() and not self.done:
             self.step('initial_player_autoplay')  # kick off the first action after bb by an autoplay agent
 
-        return self.array_everything
+        return self.array_everything.shape, self.info
 
     def step(self, action):  # pylint: disable=arguments-differ
         """
