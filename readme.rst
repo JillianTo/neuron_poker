@@ -11,15 +11,15 @@ Usage:
 Run:
 
 - Install Python 3.8
-- Create a virtual environment with ``python3.11 -m venv venv``
+- Create a virtual environment with ``python3.8 -m venv venv``
 - Activate it with ``source venv/bin/activate``
 - Install the first set of required packages with ``pip install -r 0_requirements.txt``
 - Install the second set of required packages with ``pip install -r 1_requirements.txt``
 - Run 6 random players playing against each other:
-  ``python3.11 main.py selfplay random --render`` or
-- To manually control the players:``python3.11 main.py selfplay keypress --render``
-- Example of genetic algorithm with self improvement: ``python3.11 main.py selfplay equity_improvement --improvement_rounds=20 --episodes=10``
-- For more advanced users: ``python3.11 main.py selfplay dqn_train_torch`` will start training the deep Q agent with PyTorch
+  ``python3.8 main.py selfplay random --render`` or
+- To manually control the players:``python3.8 main.py selfplay keypress --render``
+- Example of genetic algorithm with self improvement: ``python3.8 main.py selfplay equity_improvement --improvement_rounds=20 --episodes=10``
+- For more advanced users: ``python3.8 main.py selfplay dqn_train_torch`` will start training the deep Q agent with PyTorch
 
 .. figure:: doc/table.gif
    :alt:
