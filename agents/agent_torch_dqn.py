@@ -1,4 +1,4 @@
-"""Torch DQN player"""
+"""Player based on a trained neural network"""
 import math
 import random
 from collections import namedtuple, deque
@@ -49,7 +49,7 @@ Transition = namedtuple('Transition',
 class Player:
     """Mandatory class with the player methods"""
 
-    def __init__(self, name='Torch_DQN'):
+    def __init__(self, name='DQN'):
         """Initiaization of an agent"""
         self.equity_alive = 0
         self.actions = []
