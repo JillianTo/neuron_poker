@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 
-
 class ReplayMemory(object):
 
     def __init__(self, capacity):
@@ -58,14 +57,9 @@ class Player:
 
     def __init__(self, name='DQN'):
         """Initiaization of an agent"""
-        self.equity_alive = 0
-        self.actions = []
-        self.last_action_in_stage = ''
-        self.temp_stack = []
         self.name = name
-        self.autoplay = True
 
-    def initiate_agent(self, env, lr=1e-4):
+    def initiate_agent(self, env, player_idx, lr=1e-4, path=None):
         self.env = env
         # if GPU is to be used
         self.device = torch.device(
@@ -84,10 +78,17 @@ class Player:
         self.target_net.load_state_dict(self.policy_net.state_dict())
 
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=lr, amsgrad=True)
+
+        if path != None:
+            self.policy_net.load_state_dict(torch.load(path+f'/policy_net.pth', weights_only=True))
+            self.target_net.load_state_dict(torch.load(path+f'/target_net.pth', weights_only=True))
+            self.optimizer.load_state_dict(torch.load(path+f'/optimizer.pth', weights_only=True))
+
         self.memory = ReplayMemory(10000)
 
-
         self.steps_done = 0
+    
+        self.player_idx = player_idx
 
     def process_action(self, action, info):
         """Find nearest legal action"""
@@ -134,7 +135,7 @@ class Player:
         else:
             action = torch.tensor([[action_space.sample()]], device=self.device, dtype=torch.long)
 
-        return self.process_action(action, info)
+        return self.process_action(action, info).to(self.device)
 
     def optimize_model(self):
         # BATCH_SIZE is the number of transitions sampled from the replay buffer
@@ -187,6 +188,11 @@ class Player:
         torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
         self.optimizer.step()
 
+    def save_states(self, path='.'):
+        torch.save(self.policy_net.state_dict(), path+f'/policy_net.pth')
+        torch.save(self.target_net.state_dict(), path+f'/target_net.pth')
+        torch.save(self.optimizer.state_dict(), path+f'/optimizer.pth')
+
     def train(self, num_episodes=50):
         # TAU is the update rate of the target network
         TAU = 0.005
@@ -194,12 +200,14 @@ class Player:
         for i_episode in range(num_episodes):
             # Initialize the environment and get its state
             state, info = self.env.reset()
-            #state = torch.tensor(state, dtype=torch.float32, device=self.device).unsqueeze(0)
             state = torch.zeros(1, self.n_observations)
             for t in count():
-                action = self.action(self.env.action_space, state, info)
+                action = self.action(self.env.action_space, state.to(self.device), info)
                 observation, reward, done, info = self.env.step(action.item())
                 reward = torch.tensor([reward], device=self.device)
+
+                # Quit episode early if this agent ran out of money
+                done = done or self.env.players[self.player_idx].stack <= 0
 
                 if done:
                     next_state = None
@@ -207,7 +215,7 @@ class Player:
                     next_state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
                 # Store the transition in memory
-                self.memory.push(state, action, next_state, reward)
+                self.memory.push(state.to(self.device), action, next_state, reward)
 
                 # Move to the next state
                 state = next_state
@@ -225,5 +233,23 @@ class Player:
 
                 if done:
                     break
+
+        self.save_states()
+        print('Complete')
+
+    def play(self, num_episodes=50):
+        for i_episode in range(num_episodes):
+            # Initialize the environment and get its state
+            state, info = self.env.reset()
+            state = torch.zeros(1, self.n_observations)
+            for t in count():
+                action = self.action(self.env.action_space, state.to(self.device), info)
+                observation, reward, done, info = self.env.step(action.item())
+                reward = torch.tensor([reward], device=self.device)
+
+                if done:
+                    break
+                else:
+                    state = torch.tensor(observation, dtype=torch.float32, device=self.device).unsqueeze(0)
 
         print('Complete')

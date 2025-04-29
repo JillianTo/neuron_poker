@@ -9,6 +9,7 @@ Usage:
   main.py selfplay dqn_train [options]
   main.py selfplay dqn_play [options]
   main.py selfplay dqn_train_torch [options]
+  main.py selfplay dqn_play_torch [options]
   main.py learn_table_scraping [options]
 
 options:
@@ -84,6 +85,8 @@ def command_line_parser():
         elif args['dqn_train_torch']:
             runner.dqn_train_torch(model_name)
 
+        elif args['dqn_play_torch']:
+            runner.dqn_play_torch(model_name)
 
 
     else:
@@ -185,7 +188,7 @@ class SelfPlay:
                 self.log.info(f"New betting for player {i} is {betting[i]}")
 
     def dqn_train_keras_rl(self, model_name):
-        """Implementation of kreras-rl deep q learing."""
+        """Implementation of keras-rl deep q learing."""
         from agents.agent_consider_equity import Player as EquityPlayer
         from agents.agent_keras_rl_dqn import Player as DQNPlayer
         from agents.agent_random import Player as RandomPlayer
@@ -267,17 +270,37 @@ class SelfPlay:
         np.random.seed(123)
         env.seed(123)
         env.add_player(EquityPlayer(name='equity/50/70', min_call_equity=.5, min_bet_equity=.7))
-        #env.add_player(EquityPlayer(name='equity/20/30', min_call_equity=.2, min_bet_equity=.3))
-        #env.add_player(RandomPlayer())
-        #env.add_player(RandomPlayer())
-        #env.add_player(RandomPlayer())
+        env.add_player(EquityPlayer(name='equity/20/30', min_call_equity=.2, min_bet_equity=.3))
+        env.add_player(RandomPlayer())
+        env.add_player(RandomPlayer())
+        env.add_player(RandomPlayer())
         env.add_player(PlayerShell(name='torch', stack_size=self.stack))
 
         env.reset()
 
         dqn = DQNPlayer()
-        dqn.initiate_agent(env)
+        dqn.initiate_agent(env, 5)
         dqn.train(self.num_episodes)
+
+    def dqn_play_torch(self, model_name):
+        """Create 6 players, one of them a trained DQN"""
+        from agents.agent_consider_equity import Player as EquityPlayer
+        from agents.agent_torch_dqn import Player as DQNPlayer
+        from agents.agent_random import Player as RandomPlayer
+        env_name = 'neuron_poker-v0'
+        self.env = gym.make(env_name, initial_stacks=self.stack, render=self.render)
+        self.env.add_player(EquityPlayer(name='equity/50/50', min_call_equity=.5, min_bet_equity=.5))
+        self.env.add_player(EquityPlayer(name='equity/50/80', min_call_equity=.8, min_bet_equity=.8))
+        self.env.add_player(EquityPlayer(name='equity/70/70', min_call_equity=.7, min_bet_equity=.7))
+        self.env.add_player(EquityPlayer(name='equity/20/30', min_call_equity=.2, min_bet_equity=.3))
+        self.env.add_player(RandomPlayer())
+        self.env.add_player(PlayerShell(name='torch', stack_size=self.stack))
+
+        self.env.reset()
+
+        dqn = DQNPlayer()
+        dqn.initiate_agent(env, path='.')
+        dqn.play(self.num_episodes)
 
 
 if __name__ == '__main__':
