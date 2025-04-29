@@ -265,7 +265,7 @@ class SelfPlay:
         from agents.agent_random import Player as RandomPlayer
         env_name = 'neuron_poker-v0'
         env = gym.make(env_name, initial_stacks=self.stack, funds_plot=self.funds_plot, render=self.render,
-                       use_cpp_montecarlo=self.use_cpp_montecarlo)
+                       use_cpp_montecarlo=self.use_cpp_montecarlo, quit_on_player=5)
 
         np.random.seed(123)
         env.seed(123)
@@ -279,7 +279,7 @@ class SelfPlay:
         env.reset()
 
         dqn = DQNPlayer()
-        dqn.initiate_agent(env, 5)
+        dqn.initiate_agent(env)
         dqn.train(self.num_episodes)
 
     def dqn_play_torch(self, model_name):
@@ -288,7 +288,7 @@ class SelfPlay:
         from agents.agent_torch_dqn import Player as DQNPlayer
         from agents.agent_random import Player as RandomPlayer
         env_name = 'neuron_poker-v0'
-        self.env = gym.make(env_name, initial_stacks=self.stack, render=self.render)
+        self.env = gym.make(env_name, initial_stacks=self.stack, render=self.render, quit_on_player=5)
         self.env.add_player(EquityPlayer(name='equity/50/50', min_call_equity=.5, min_bet_equity=.5))
         self.env.add_player(EquityPlayer(name='equity/50/80', min_call_equity=.8, min_bet_equity=.8))
         self.env.add_player(EquityPlayer(name='equity/70/70', min_call_equity=.7, min_bet_equity=.7))

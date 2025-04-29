@@ -66,7 +66,7 @@ class HoldemTable(Env):
 
     def __init__(self, initial_stacks=100, small_blind=1, big_blind=2, render=False, funds_plot=True,
                  max_raises_per_player_round=2, use_cpp_montecarlo=False, raise_illegal_moves=False,
-                 calculate_equity=False):
+                 calculate_equity=False, quit_on_player=None):
         """
         The table needs to be initialized once at the beginning
 
@@ -138,6 +138,8 @@ class HoldemTable(Env):
         self.first_action_for_hand = None
 
         self.raise_illegal_moves = raise_illegal_moves
+
+        self.quit_on_player = quit_on_player
 
     def reset(self):
         """Reset after game over."""
@@ -463,7 +465,7 @@ class HoldemTable(Env):
                 self.player_cycle.deactivate_player(idx)
 
         remaining_players = sum(player_alive)
-        if remaining_players < 2:
+        if remaining_players < 2 or (self.quit_on_player != None and not self.players[self.quit_on_player].stack > 0):
             self._game_over()
             return True
         return False

@@ -59,7 +59,7 @@ class Player:
         """Initiaization of an agent"""
         self.name = name
 
-    def initiate_agent(self, env, player_idx, lr=1e-4, path=None):
+    def initiate_agent(self, env, lr=1e-4, path=None):
         self.env = env
         # if GPU is to be used
         self.device = torch.device(
@@ -87,8 +87,6 @@ class Player:
         self.memory = ReplayMemory(10000)
 
         self.steps_done = 0
-    
-        self.player_idx = player_idx
 
     def process_action(self, action, info):
         """Find nearest legal action"""
@@ -205,9 +203,6 @@ class Player:
                 action = self.action(self.env.action_space, state.to(self.device), info)
                 observation, reward, done, info = self.env.step(action.item())
                 reward = torch.tensor([reward], device=self.device)
-
-                # Quit episode early if this agent ran out of money
-                done = done or self.env.players[self.player_idx].stack <= 0
 
                 if done:
                     next_state = None
