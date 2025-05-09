@@ -22,6 +22,7 @@ options:
   --screenloglevel=<>       log level on screen
   --episodes=<>             number of episodes to play
   --stack=<>                starting stack for each player [default: 500].
+  --batchsize=<>            batch size for torch dqn agent [default: 500].
 
 """
 
@@ -58,10 +59,12 @@ def command_line_parser():
 
     if args['selfplay']:
         num_episodes = 1 if not args['--episodes'] else int(args['--episodes'])
+        batch_size = 500 if not args['--batchsize'] else int(args['--batchsize'])
         runner = SelfPlay(render=args['--render'], num_episodes=num_episodes,
                           use_cpp_montecarlo=args['--use_cpp_montecarlo'],
                           funds_plot=args['--funds_plot'],
-                          stack=int(args['--stack']))
+                          stack=int(args['--stack']),
+                          batch_size=batch_size)
 
         if args['random']:
             runner.random_agents()
@@ -96,7 +99,7 @@ def command_line_parser():
 class SelfPlay:
     """Orchestration of playing against itself"""
 
-    def __init__(self, render, num_episodes, use_cpp_montecarlo, funds_plot, stack=500):
+    def __init__(self, render, num_episodes, use_cpp_montecarlo, funds_plot, stack=500, batch_size=500):
         """Initialize"""
         self.winner_in_episodes = []
         self.use_cpp_montecarlo = use_cpp_montecarlo
@@ -105,6 +108,7 @@ class SelfPlay:
         self.env = None
         self.num_episodes = num_episodes
         self.stack = stack
+        self.batch_size = batch_size
         self.log = logging.getLogger(__name__)
 
     def random_agents(self):
@@ -279,7 +283,7 @@ class SelfPlay:
         env.reset()
 
         dqn = DQNPlayer()
-        dqn.initiate_agent(env)
+        dqn.initiate_agent(env, batch_size=self.batch_size)
         dqn.train(self.num_episodes)
 
     def dqn_play_torch(self, model_name):
@@ -288,7 +292,7 @@ class SelfPlay:
         from agents.agent_torch_dqn import Player as DQNPlayer
         from agents.agent_random import Player as RandomPlayer
         env_name = 'neuron_poker-v0'
-        self.env = gym.make(env_name, initial_stacks=self.stack, render=self.render, quit_on_player=5)
+        self.env = gym.make(env_name, initial_stacks=self.stack, render=self.render)
         self.env.add_player(EquityPlayer(name='equity/50/50', min_call_equity=.5, min_bet_equity=.5))
         self.env.add_player(EquityPlayer(name='equity/50/80', min_call_equity=.8, min_bet_equity=.8))
         self.env.add_player(EquityPlayer(name='equity/70/70', min_call_equity=.7, min_bet_equity=.7))
@@ -299,7 +303,7 @@ class SelfPlay:
         self.env.reset()
 
         dqn = DQNPlayer()
-        dqn.initiate_agent(env, path='.')
+        dqn.initiate_agent(self.env, batch_size=self.batch_size, path='./pretrained_weights/')
         dqn.play(self.num_episodes)
 
 

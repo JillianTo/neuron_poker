@@ -59,7 +59,7 @@ class Player:
         """Initiaization of an agent"""
         self.name = name
 
-    def initiate_agent(self, env, lr=1e-4, path=None):
+    def initiate_agent(self, env, lr=1e-4, batch_size=500, path=None):
         self.env = env
         # if GPU is to be used
         self.device = torch.device(
@@ -87,6 +87,9 @@ class Player:
         self.memory = ReplayMemory(10000)
 
         self.steps_done = 0
+
+        # Number of transitions sampled from the replay buffer
+        self.batch_size = batch_size
 
     def process_action(self, action, info):
         """Find nearest legal action"""
@@ -136,14 +139,12 @@ class Player:
         return self.process_action(action, info).to(self.device)
 
     def optimize_model(self):
-        # BATCH_SIZE is the number of transitions sampled from the replay buffer
         # GAMMA is the discount factor as mentioned in the previous section
-        BATCH_SIZE = 128
         GAMMA = 0.99
 
-        if len(self.memory) < BATCH_SIZE:
+        if len(self.memory) < self.batch_size:
             return
-        transitions = self.memory.sample(BATCH_SIZE)
+        transitions = self.memory.sample(self.batch_size)
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
         # to Transition of batch-arrays.
@@ -169,7 +170,7 @@ class Player:
         # on the "older" target_net; selecting their best reward with max(1).values
         # This is merged based on the mask, such that we'll have either the expected
         # state value or 0 in case the state was final.
-        next_state_values = torch.zeros(BATCH_SIZE, device=self.device)
+        next_state_values = torch.zeros(self.batch_size, device=self.device)
         with torch.no_grad():
             next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
         # Compute the expected Q values
